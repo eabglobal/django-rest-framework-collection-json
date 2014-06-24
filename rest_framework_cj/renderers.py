@@ -5,14 +5,38 @@ class CollectionJsonRenderer(JSONRenderer):
     media_type = 'application/vnd.collection+json'
     format = 'collection+json'
 
-    def _get_response_body(self, href, data):
+    def _transform_field(self, (key, value)):
+        return {'name': key, 'value': value}
+
+    def _transform_item(self, id_field, item):
+        fields = [(x, item[x]) for x in item.keys() if x != id_field]
+        transformed_fields = map(self._transform_field, fields)
+        return {
+            'href': item[id_field],
+            'data': transformed_fields,
+        }
+
+    def _transform_items(self, view, data):
+        serializer = view.get_serializer()
+        id_field = serializer.opts.url_field_name
+
+        if isinstance(data, list):
+            items = map(lambda x: self._transform_item(id_field, x), data)
+        elif isinstance(data, dict):
+            items = [self._transform_item(id_field, data)]
+
+        return items
+
+    def _transform_data(self, request, view, data):
+        href = request.build_absolute_uri()
+
         return {
             "collection":
             {
                 "version": "1.0",
                 "href": href,
                 "links": [],
-                "items": [data],
+                "items": self._transform_items(view, data),
                 "queries": [],
                 "template": {},
                 "error": {},
@@ -21,9 +45,9 @@ class CollectionJsonRenderer(JSONRenderer):
 
     def render(self, data, media_type=None, renderer_context=None):
         request = renderer_context['request']
-        href = request.build_absolute_uri()
+        view = renderer_context['view']
 
-        data = self._get_response_body(href, data)
+        data = self._transform_data(request, view, data)
 
         return super(CollectionJsonRenderer, self).render(data, media_type,
                                                           renderer_context)
