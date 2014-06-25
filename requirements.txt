@@ -1,0 +1,6 @@
+-e .
+django
+ipdb
+ipython
+pytest
+pytest-xdist
