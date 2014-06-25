@@ -9,4 +9,5 @@ setup(
     install_requires=['djangorestframework'],
     classifiers=['Private  :: Do Not Upload to PyPI'],
     include_package_data=True,
+    test_suite='tests.runtests.main',
 )
