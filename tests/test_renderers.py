@@ -1,7 +1,7 @@
 import json
 
 from django.conf.urls import patterns, include
-from django.db.models import Model, CharField
+from django.db.models import Model, CharField, ForeignKey
 from django.test import TestCase
 
 from rest_framework import status
@@ -13,14 +13,31 @@ from pytest import fixture
 from rest_framework_cj.renderers import CollectionJsonRenderer
 
 
+class Moron(Model):
+    name = CharField(max_length='100')
+
+
+class MoronHyperlinkedModelSerializer(HyperlinkedModelSerializer):
+    class Meta(object):
+        model = Moron
+        fields = ('url', 'name')
+
+
+class MoronReadOnlyModelViewSet(ReadOnlyModelViewSet):
+    renderer_classes = (CollectionJsonRenderer, )
+    queryset = Moron.objects.all()
+    serializer_class = MoronHyperlinkedModelSerializer
+
+
 class Dummy(Model):
     name = CharField(max_length='100')
+    moron = ForeignKey('Moron')
 
 
 class DummyHyperlinkedModelSerializer(HyperlinkedModelSerializer):
     class Meta(object):
         model = Dummy
-        fields = ('url', 'name')
+        fields = ('url', 'name', 'moron')
 
 
 class DummyReadOnlyModelViewSet(ReadOnlyModelViewSet):
@@ -28,8 +45,10 @@ class DummyReadOnlyModelViewSet(ReadOnlyModelViewSet):
     queryset = Dummy.objects.all()
     serializer_class = DummyHyperlinkedModelSerializer
 
+
 router = DefaultRouter()
 router.register('dummy', DummyReadOnlyModelViewSet)
+router.register('moron', MoronReadOnlyModelViewSet)
 urlpatterns = patterns(
     '',
     (r'^rest-api/', include(router.urls)),
@@ -45,7 +64,8 @@ class TestCollectionJsonRenderer(TestCase):
     urls = 'tests.test_renderers'
 
     def setUp(self):
-        Dummy.objects.create(name='Yolo McSwaggerson')
+        bob = Moron.objects.create(name='Bob LawLaw')
+        Dummy.objects.create(name='Yolo McSwaggerson', moron=bob)
         self.response = self.client.get('/rest-api/dummy/')
         self.content = json.loads(self.response.content)
 
@@ -77,3 +97,11 @@ class TestCollectionJsonRenderer(TestCase):
     def test_the_dummy_item_contains_name(self):
         name = self.get_dummy_attribute('name')['value']
         self.assertEqual(name, 'Yolo McSwaggerson')
+
+    def get_dummy_link(self, rel):
+        links = self.get_dummy()['links']
+        return next(x for x in links if x['rel'] == rel)
+
+    def test_the_dummy_item_links_to_child_elements(self):
+        href = self.get_dummy_link('moron')['href']
+        self.assertEqual(href, 'http://testserver/rest-api/moron/1/')

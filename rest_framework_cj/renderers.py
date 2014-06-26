@@ -1,3 +1,7 @@
+from rest_framework.relations import (
+    HyperlinkedRelatedField,
+    HyperlinkedIdentityField,
+)
 from rest_framework.renderers import JSONRenderer
 
 
@@ -5,25 +9,46 @@ class CollectionJsonRenderer(JSONRenderer):
     media_type = 'application/vnd.collection+json'
     format = 'collection+json'
 
-    def _transform_field(self, (key, value)):
+    def _transform_field(self, key, value):
         return {'name': key, 'value': value}
 
-    def _transform_item(self, id_field, item):
-        fields = [(x, item[x]) for x in item.keys() if x != id_field]
-        transformed_fields = map(self._transform_field, fields)
-        return {
-            'href': item[id_field],
-            'data': transformed_fields,
-        }
+    def _get_id_field(self, fields):
+        try:
+            return next(k for (k, v) in fields
+                        if isinstance(v, HyperlinkedIdentityField))
+        except StopIteration:
+            return None
+
+    def _get_related_fields(self, fields):
+        return [k for (k, v) in fields
+                if isinstance(v, HyperlinkedRelatedField)]
+
+    def _transform_item(self, serializer, item):
+        fields = serializer.fields.items()
+        id_field = self._get_id_field(fields)
+        related_fields = self._get_related_fields(fields)
+
+        data = [self._transform_field(k, item[k])
+                for k in item.keys()
+                if k != id_field and k not in related_fields]
+        result = {'data': data}
+
+        if id_field:
+            result['href'] = item[id_field]
+
+        links = [{'rel': x, 'href': item[x]} for x in related_fields]
+        if links:
+            result['links'] = links
+
+        return result
 
     def _transform_items(self, view, data):
         serializer = view.get_serializer()
-        id_field = serializer.opts.url_field_name
 
         if isinstance(data, list):
-            items = map(lambda x: self._transform_item(id_field, x), data)
+            items = map(lambda x: self._transform_item(serializer, x), data)
         elif isinstance(data, dict):
-            items = [self._transform_item(id_field, data)]
+            items = [self._transform_item(serializer, data)]
 
         return items
 
