@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='djangorestframework-collection-json',
+    name='djangorestframework_collection_json',
     version='0.0.0',
     description='Collection+JSON support for Django REST Framework',
     author='Advisory Board Company',
