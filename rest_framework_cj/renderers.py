@@ -4,6 +4,7 @@ from rest_framework.relations import (
 )
 from rest_framework.renderers import JSONRenderer
 
+from .fields import LinkField
 
 class CollectionJsonRenderer(JSONRenderer):
     media_type = 'application/vnd.collection+json'
@@ -12,21 +13,17 @@ class CollectionJsonRenderer(JSONRenderer):
     def _transform_field(self, key, value):
         return {'name': key, 'value': value}
 
-    def _get_id_field(self, fields):
-        try:
-            return next(k for (k, v) in fields
-                        if isinstance(v, HyperlinkedIdentityField))
-        except StopIteration:
-            return None
-
-    def _get_related_fields(self, fields):
+    def _get_related_fields(self, fields, id_field):
         return [k for (k, v) in fields
-                if isinstance(v, HyperlinkedRelatedField)]
+                if k != id_field
+                and (isinstance(v, HyperlinkedRelatedField)
+                or isinstance(v, HyperlinkedIdentityField)
+                or isinstance(v, LinkField))]
 
     def _transform_item(self, serializer, item):
         fields = serializer.fields.items()
-        id_field = self._get_id_field(fields)
-        related_fields = self._get_related_fields(fields)
+        id_field = serializer.opts.url_field_name
+        related_fields = self._get_related_fields(fields, id_field)
 
         data = [self._transform_field(k, item[k])
                 for k in item.keys()

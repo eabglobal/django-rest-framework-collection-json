@@ -5,12 +5,14 @@ from django.db.models import Model, CharField, ForeignKey
 from django.test import TestCase
 
 from rest_framework import status
+from rest_framework.relations import HyperlinkedIdentityField
 from rest_framework.routers import DefaultRouter
 from rest_framework.serializers import HyperlinkedModelSerializer
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from pytest import fixture
 
 from rest_framework_cj.renderers import CollectionJsonRenderer
+from rest_framework_cj.fields import LinkField
 
 
 class Moron(Model):
@@ -35,9 +37,15 @@ class Dummy(Model):
 
 
 class DummyHyperlinkedModelSerializer(HyperlinkedModelSerializer):
+    other_stuff = LinkField('get_other_link')
+    some_link = HyperlinkedIdentityField(view_name='moron-detail')
+
     class Meta(object):
         model = Dummy
-        fields = ('url', 'name', 'moron')
+        fields = ('url', 'name', 'moron', 'other_stuff', 'some_link')
+
+    def get_other_link(self, obj):
+        return 'http://other-stuff.com/'
 
 
 class DummyReadOnlyModelViewSet(ReadOnlyModelViewSet):
@@ -104,4 +112,12 @@ class TestCollectionJsonRenderer(TestCase):
 
     def test_the_dummy_item_links_to_child_elements(self):
         href = self.get_dummy_link('moron')['href']
+        self.assertEqual(href, 'http://testserver/rest-api/moron/1/')
+
+    def test_link_fields_are_rendered_as_links(self):
+        href = self.get_dummy_link('other_stuff')['href']
+        self.assertEqual(href, 'http://other-stuff.com/')
+
+    def test_attribute_links_are_rendered_as_links(self):
+        href = self.get_dummy_link('some_link')['href']
         self.assertEqual(href, 'http://testserver/rest-api/moron/1/')
