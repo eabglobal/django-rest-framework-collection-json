@@ -6,8 +6,10 @@ from django.test import TestCase
 
 from rest_framework import status
 from rest_framework.relations import HyperlinkedIdentityField
+from rest_framework.response import Response
 from rest_framework.routers import DefaultRouter
 from rest_framework.serializers import HyperlinkedModelSerializer
+from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from pytest import fixture
 
@@ -54,12 +56,20 @@ class DummyReadOnlyModelViewSet(ReadOnlyModelViewSet):
     serializer_class = DummyHyperlinkedModelSerializer
 
 
+class NoSerializerView(APIView):
+    renderer_classes = (CollectionJsonRenderer, )
+
+    def get(self, request):
+        return Response({'foo': '1'})
+
+
 router = DefaultRouter()
 router.register('dummy', DummyReadOnlyModelViewSet)
 router.register('moron', MoronReadOnlyModelViewSet)
 urlpatterns = patterns(
     '',
     (r'^rest-api/', include(router.urls)),
+    (r'^rest-api/no-serializer/', NoSerializerView.as_view()),
 )
 
 
@@ -98,9 +108,12 @@ class TestCollectionJsonRenderer(TestCase):
         href = self.get_dummy()['href']
         self.assertEqual(href, 'http://testserver/rest-api/dummy/1/')
 
+    def get_attribute(self, data, attribute_name):
+        return next(x for x in data if x['name'] == attribute_name)
+
     def get_dummy_attribute(self, attribute_name):
         data = self.get_dummy()['data']
-        return next(x for x in data if x['name'] == attribute_name)
+        return self.get_attribute(data, attribute_name)
 
     def test_the_dummy_item_contains_name(self):
         name = self.get_dummy_attribute('name')['value']
@@ -121,3 +134,10 @@ class TestCollectionJsonRenderer(TestCase):
     def test_attribute_links_are_rendered_as_links(self):
         href = self.get_dummy_link('some_link')['href']
         self.assertEqual(href, 'http://testserver/rest-api/moron/1/')
+
+    def test_views_without_a_serializer_work(self):
+        response = self.client.get('/rest-api/no-serializer/')
+        content = json.loads(response.content)
+        data = content['collection']['items'][0]['data']
+        item = self.get_attribute(data, 'foo')
+        self.assertEqual(item['value'], '1')

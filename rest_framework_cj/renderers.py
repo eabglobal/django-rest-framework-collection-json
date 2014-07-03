@@ -20,6 +20,10 @@ class CollectionJsonRenderer(JSONRenderer):
                 or isinstance(v, HyperlinkedIdentityField)
                 or isinstance(v, LinkField))]
 
+    def _simple_transform_item(self, item):
+        data = [self._transform_field(k, v) for (k, v) in item.items()]
+        return {'data': data}
+
     def _transform_item(self, serializer, item):
         fields = serializer.fields.items()
         id_field = serializer.opts.url_field_name
@@ -40,14 +44,14 @@ class CollectionJsonRenderer(JSONRenderer):
         return result
 
     def _transform_items(self, view, data):
-        serializer = view.get_serializer()
+        if isinstance(data, dict):
+            data = [data]
 
-        if isinstance(data, list):
-            items = map(lambda x: self._transform_item(serializer, x), data)
-        elif isinstance(data, dict):
-            items = [self._transform_item(serializer, data)]
-
-        return items
+        if hasattr(view, 'get_serializer'):
+            serializer = view.get_serializer()
+            return map(lambda x: self._transform_item(serializer, x), data)
+        else:
+            return map(self._simple_transform_item, data)
 
     def _transform_data(self, request, view, data):
         href = request.build_absolute_uri()
