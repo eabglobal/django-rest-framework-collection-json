@@ -6,6 +6,7 @@ from rest_framework.renderers import JSONRenderer
 
 from .fields import LinkField
 
+
 class CollectionJsonRenderer(JSONRenderer):
     media_type = 'application/vnd.collection+json'
     format = 'collection+json'
@@ -37,7 +38,7 @@ class CollectionJsonRenderer(JSONRenderer):
         if id_field:
             result['href'] = item[id_field]
 
-        links = [{'rel': x, 'href': item[x]} for x in related_fields]
+        links = [self._make_link(x, item[x]) for x in related_fields]
         if links:
             result['links'] = links
 
@@ -52,6 +53,26 @@ class CollectionJsonRenderer(JSONRenderer):
             return map(lambda x: self._transform_item(serializer, x), data)
         else:
             return map(self._simple_transform_item, data)
+
+    def _is_paginated(self, data):
+        pagination_keys = ('next', 'previous', 'results')
+        return all(k in data for k in pagination_keys)
+
+    def _get_pagination_links(self, data):
+        results = []
+        if data.get('next', None):
+            results.append(self._make_link('next', data['next']))
+
+        if data.get('previous', None):
+            results.append(self._make_link('previous', data['previous']))
+
+        return results
+
+    def _get_items_from_paginated_data(self, data):
+        return data.get('results')
+
+    def _make_link(self, rel, href):
+        return {'rel': rel, 'href': href}
 
     def _transform_data(self, request, view, data):
         href = request.build_absolute_uri()
@@ -73,12 +94,15 @@ class CollectionJsonRenderer(JSONRenderer):
         # custom routers. Works okay for now.
         # ------------------------------------------
         if view.get_view_name() == 'Api Root':
-            {'practices': 'http://localhost:8001/rest-api/practices/', 'members': 'http://localhost:8001/rest-api/members/'}
-            links = [{'rel': key, 'href': data[key]} for key in data.keys()]
+            links = [self._make_link(key, data[key]) for key in data.keys()]
             items = []
         else:
-            items =self._transform_items(view, data)
             links = []
+            if self._is_paginated(data):
+                links.extend(self._get_pagination_links(data))
+                data = self._get_items_from_paginated_data(data)
+
+            items = self._transform_items(view, data)
 
         return {
             "collection":

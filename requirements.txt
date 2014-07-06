@@ -1,4 +1,5 @@
 -e .
+collection-json
 django
 ipdb
 ipython

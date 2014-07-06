@@ -4,6 +4,7 @@ from django.conf.urls import patterns, include
 from django.db.models import Model, CharField, ForeignKey
 from django.test import TestCase
 
+from collection_json import Collection
 from rest_framework import status
 from rest_framework.relations import HyperlinkedIdentityField
 from rest_framework.response import Response
@@ -63,6 +64,28 @@ class NoSerializerView(APIView):
         return Response({'foo': '1'})
 
 
+class PaginatedDataView(APIView):
+    renderer_classes = (CollectionJsonRenderer, )
+
+    def get(self, request):
+        return Response({
+            'next': 'http://test.com/colleciton/next',
+            'previous': 'http://test.com/colleciton/previous',
+            'results': [{'foo': 1}],
+        })
+
+
+class NonePaginatedDataView(APIView):
+    renderer_classes = (CollectionJsonRenderer, )
+
+    def get(self, request):
+        return Response({
+            'next': None,
+            'previous': None,
+            'results': [{'foo': 1}],
+        })
+
+
 router = DefaultRouter()
 router.register('dummy', DummyReadOnlyModelViewSet)
 router.register('moron', MoronReadOnlyModelViewSet)
@@ -70,6 +93,8 @@ urlpatterns = patterns(
     '',
     (r'^rest-api/', include(router.urls)),
     (r'^rest-api/no-serializer/', NoSerializerView.as_view()),
+    (r'^rest-api/paginated/', PaginatedDataView.as_view()),
+    (r'^rest-api/none-paginated/', NonePaginatedDataView.as_view()),
 )
 
 
@@ -141,3 +166,37 @@ class TestCollectionJsonRenderer(TestCase):
         data = content['collection']['items'][0]['data']
         item = self.get_attribute(data, 'foo')
         self.assertEqual(item['value'], '1')
+
+
+class TestCollectionJsonRendererPagination(TestCase):
+    urls = 'tests.test_renderers'
+
+    def setUp(self):
+        response = self.client.get('/rest-api/paginated/')
+        self.collection = Collection.from_json(response.content)
+
+    def test_paginated_views_display_data(self):
+        foo = self.collection.items[0].find(name='foo')[0]
+        self.assertEqual(foo.value, 1)
+
+    def test_paginated_views_display_next(self):
+        next_link = self.collection.links.find(rel='next')[0]
+        self.assertEqual(next_link.href, 'http://test.com/colleciton/next')
+
+    def test_paginated_views_display_previous(self):
+        next_link = self.collection.links.find(rel='previous')[0]
+        self.assertEqual(next_link.href, 'http://test.com/colleciton/previous')
+
+
+class TestCollectionJsonRendererPaginationWithnone(TestCase):
+    urls = 'tests.test_renderers'
+
+    def setUp(self):
+        response = self.client.get('/rest-api/none-paginated/')
+        self.collection = Collection.from_json(response.content)
+
+    def test_paginated_view_does_not_display_next(self):
+        self.assertEqual(len(self.collection.links.find(rel='next')), 0)
+
+    def test_paginated_view_does_not_display_previous(self):
+        self.assertEqual(len(self.collection.links.find(rel='previous')), 0)
