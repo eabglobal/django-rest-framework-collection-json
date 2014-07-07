@@ -6,6 +6,7 @@ from django.test import TestCase
 
 from collection_json import Collection
 from rest_framework import status
+from rest_framework.exceptions import ParseError
 from rest_framework.relations import HyperlinkedIdentityField
 from rest_framework.response import Response
 from rest_framework.routers import DefaultRouter
@@ -86,6 +87,13 @@ class NonePaginatedDataView(APIView):
         })
 
 
+class ParseErrorView(APIView):
+    renderer_classes = (CollectionJsonRenderer, )
+
+    def get(self, request):
+        raise ParseError('lol nice one')
+
+
 router = DefaultRouter()
 router.register('dummy', DummyReadOnlyModelViewSet)
 router.register('moron', MoronReadOnlyModelViewSet)
@@ -95,6 +103,7 @@ urlpatterns = patterns(
     (r'^rest-api/no-serializer/', NoSerializerView.as_view()),
     (r'^rest-api/paginated/', PaginatedDataView.as_view()),
     (r'^rest-api/none-paginated/', NonePaginatedDataView.as_view()),
+    (r'^rest-api/parse-error/', ParseErrorView.as_view()),
 )
 
 
@@ -201,3 +210,10 @@ class TestCollectionJsonRendererPaginationWithnone(SimpleGetTest):
 
     def test_paginated_view_does_not_display_previous(self):
         self.assertEqual(len(self.collection.links.find(rel='previous')), 0)
+
+
+class TestErrorHandling(SimpleGetTest):
+    endpoint = '/rest-api/parse-error/'
+
+    def test_errors_are_reported(self):
+        self.assertEqual(self.collection.error.message, 'lol nice one')

@@ -74,9 +74,14 @@ class CollectionJsonRenderer(JSONRenderer):
     def _make_link(self, rel, href):
         return {'rel': rel, 'href': href}
 
-    def _transform_data(self, request, view, data):
-        href = request.build_absolute_uri()
+    def _get_error(self, data):
+        return {
+            'error': {
+                'message': data['detail']
+            }
+        }
 
+    def _get_items_and_links(self, view, data):
         # ------------------------------------------
         #          ______   ___  ______
         #           )_   \ '-,) /   _(
@@ -105,23 +110,29 @@ class CollectionJsonRenderer(JSONRenderer):
             items = self._transform_items(view, data)
 
         return {
-            "collection":
-            {
-                "version": "1.0",
-                "href": href,
-                "links": links,
-                "items": items,
-                "queries": [],
-                "template": {},
-                "error": {},
-            }
+            'items': items,
+            'links': links,
         }
+
+    def _transform_data(self, request, response, view, data):
+        collection = {
+            "version": "1.0",
+            "href": request.build_absolute_uri(),
+        }
+
+        if response.exception:
+            collection.update(self._get_error(data))
+        else:
+            collection.update(self._get_items_and_links(view, data))
+
+        return {'collection': collection}
 
     def render(self, data, media_type=None, renderer_context=None):
         request = renderer_context['request']
         view = renderer_context['view']
+        response = renderer_context['response']
 
-        data = self._transform_data(request, view, data)
+        data = self._transform_data(request, response, view, data)
 
         return super(CollectionJsonRenderer, self).render(data, media_type,
                                                           renderer_context)
