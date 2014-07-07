@@ -65,48 +65,6 @@ class NoSerializerView(APIView):
         return Response({'foo': '1'})
 
 
-class PaginatedDataView(APIView):
-    renderer_classes = (CollectionJsonRenderer, )
-
-    def get(self, request):
-        return Response({
-            'next': 'http://test.com/colleciton/next',
-            'previous': 'http://test.com/colleciton/previous',
-            'results': [{'foo': 1}],
-        })
-
-
-class NonePaginatedDataView(APIView):
-    renderer_classes = (CollectionJsonRenderer, )
-
-    def get(self, request):
-        return Response({
-            'next': None,
-            'previous': None,
-            'results': [{'foo': 1}],
-        })
-
-
-class ParseErrorView(APIView):
-    renderer_classes = (CollectionJsonRenderer, )
-
-    def get(self, request):
-        raise ParseError('lol nice one')
-
-
-router = DefaultRouter()
-router.register('dummy', DummyReadOnlyModelViewSet)
-router.register('moron', MoronReadOnlyModelViewSet)
-urlpatterns = patterns(
-    '',
-    (r'^rest-api/', include(router.urls)),
-    (r'^rest-api/no-serializer/', NoSerializerView.as_view()),
-    (r'^rest-api/paginated/', PaginatedDataView.as_view()),
-    (r'^rest-api/none-paginated/', NonePaginatedDataView.as_view()),
-    (r'^rest-api/parse-error/', ParseErrorView.as_view()),
-)
-
-
 @fixture
 def cj_renderer(request):
     return CollectionJsonRenderer()
@@ -186,6 +144,17 @@ class TestCollectionJsonRenderer(TestCase):
         self.assertEqual(item['value'], '1')
 
 
+class PaginatedDataView(APIView):
+    renderer_classes = (CollectionJsonRenderer, )
+
+    def get(self, request):
+        return Response({
+            'next': 'http://test.com/colleciton/next',
+            'previous': 'http://test.com/colleciton/previous',
+            'results': [{'foo': 1}],
+        })
+
+
 class TestCollectionJsonRendererPagination(SimpleGetTest):
     endpoint = '/rest-api/paginated/'
 
@@ -202,7 +171,18 @@ class TestCollectionJsonRendererPagination(SimpleGetTest):
         self.assertEqual(next_link.href, 'http://test.com/colleciton/previous')
 
 
-class TestCollectionJsonRendererPaginationWithnone(SimpleGetTest):
+class NonePaginatedDataView(APIView):
+    renderer_classes = (CollectionJsonRenderer, )
+
+    def get(self, request):
+        return Response({
+            'next': None,
+            'previous': None,
+            'results': [{'foo': 1}],
+        })
+
+
+class TestCollectionJsonRendererPaginationWithNone(SimpleGetTest):
     endpoint = '/rest-api/none-paginated/'
 
     def test_paginated_view_does_not_display_next(self):
@@ -212,8 +192,27 @@ class TestCollectionJsonRendererPaginationWithnone(SimpleGetTest):
         self.assertEqual(len(self.collection.links.find(rel='previous')), 0)
 
 
+class ParseErrorView(APIView):
+    renderer_classes = (CollectionJsonRenderer, )
+
+    def get(self, request):
+        raise ParseError('lol nice one')
+
+
 class TestErrorHandling(SimpleGetTest):
     endpoint = '/rest-api/parse-error/'
 
     def test_errors_are_reported(self):
         self.assertEqual(self.collection.error.message, 'lol nice one')
+
+router = DefaultRouter()
+router.register('dummy', DummyReadOnlyModelViewSet)
+router.register('moron', MoronReadOnlyModelViewSet)
+urlpatterns = patterns(
+    '',
+    (r'^rest-api/', include(router.urls)),
+    (r'^rest-api/no-serializer/', NoSerializerView.as_view()),
+    (r'^rest-api/paginated/', PaginatedDataView.as_view()),
+    (r'^rest-api/none-paginated/', NonePaginatedDataView.as_view()),
+    (r'^rest-api/parse-error/', ParseErrorView.as_view()),
+)
