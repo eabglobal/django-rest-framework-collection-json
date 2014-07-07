@@ -2,6 +2,7 @@ from rest_framework.relations import (
     HyperlinkedRelatedField,
     HyperlinkedIdentityField,
 )
+from rest_framework.serializers import HyperlinkedModelSerializer
 from rest_framework.renderers import JSONRenderer
 
 from .fields import LinkField
@@ -25,9 +26,15 @@ class CollectionJsonRenderer(JSONRenderer):
         data = [self._transform_field(k, v) for (k, v) in item.items()]
         return {'data': data}
 
+    def _get_id_field(self, serializer):
+        if isinstance(serializer, HyperlinkedModelSerializer):
+            return serializer.opts.url_field_name
+        else:
+            return None
+
     def _transform_item(self, serializer, item):
         fields = serializer.fields.items()
-        id_field = serializer.opts.url_field_name
+        id_field = self._get_id_field(serializer)
         related_fields = self._get_related_fields(fields, id_field)
 
         data = [self._transform_field(k, item[k])

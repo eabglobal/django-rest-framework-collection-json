@@ -10,7 +10,9 @@ from rest_framework.exceptions import ParseError
 from rest_framework.relations import HyperlinkedIdentityField
 from rest_framework.response import Response
 from rest_framework.routers import DefaultRouter
-from rest_framework.serializers import HyperlinkedModelSerializer
+from rest_framework.serializers import (
+    HyperlinkedModelSerializer, ModelSerializer
+)
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from pytest import fixture
@@ -144,6 +146,35 @@ class TestCollectionJsonRenderer(TestCase):
         self.assertEqual(item['value'], '1')
 
 
+class Simple(Model):
+    name = CharField(max_length='100')
+
+
+class SimpleModelSerializer(ModelSerializer):
+
+    class Meta(object):
+        model = Dummy
+        fields = ('name', )
+
+
+class SimpleViewSet(ReadOnlyModelViewSet):
+    renderer_classes = (CollectionJsonRenderer, )
+    queryset = Simple.objects.all()
+    serializer_class = SimpleModelSerializer
+
+
+class TestNormalModels(SimpleGetTest):
+    endpoint = '/rest-api/normal-model/'
+
+    def setUp(self):
+        Simple.objects.create(name='Foobar Baz')
+        super(TestNormalModels, self).setUp()
+
+    def test_items_dont_have_a_href(self):
+        href_count = len(self.collection.items[0].find(name='href'))
+        self.assertEqual(href_count, 0)
+
+
 class PaginatedDataView(APIView):
     renderer_classes = (CollectionJsonRenderer, )
 
@@ -208,6 +239,7 @@ class TestErrorHandling(SimpleGetTest):
 router = DefaultRouter()
 router.register('dummy', DummyReadOnlyModelViewSet)
 router.register('moron', MoronReadOnlyModelViewSet)
+router.register('normal-model', SimpleViewSet)
 urlpatterns = patterns(
     '',
     (r'^rest-api/', include(router.urls)),
