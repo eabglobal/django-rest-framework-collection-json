@@ -103,6 +103,15 @@ def cj_renderer(request):
     return CollectionJsonRenderer()
 
 
+class SimpleGetTest(TestCase):
+    urls = 'tests.test_renderers'
+    endpoint = ''
+
+    def setUp(self):
+        response = self.client.get(self.endpoint)
+        self.collection = Collection.from_json(response.content)
+
+
 class TestCollectionJsonRenderer(TestCase):
     urls = 'tests.test_renderers'
 
@@ -168,12 +177,8 @@ class TestCollectionJsonRenderer(TestCase):
         self.assertEqual(item['value'], '1')
 
 
-class TestCollectionJsonRendererPagination(TestCase):
-    urls = 'tests.test_renderers'
-
-    def setUp(self):
-        response = self.client.get('/rest-api/paginated/')
-        self.collection = Collection.from_json(response.content)
+class TestCollectionJsonRendererPagination(SimpleGetTest):
+    endpoint = '/rest-api/paginated/'
 
     def test_paginated_views_display_data(self):
         foo = self.collection.items[0].find(name='foo')[0]
@@ -188,12 +193,8 @@ class TestCollectionJsonRendererPagination(TestCase):
         self.assertEqual(next_link.href, 'http://test.com/colleciton/previous')
 
 
-class TestCollectionJsonRendererPaginationWithnone(TestCase):
-    urls = 'tests.test_renderers'
-
-    def setUp(self):
-        response = self.client.get('/rest-api/none-paginated/')
-        self.collection = Collection.from_json(response.content)
+class TestCollectionJsonRendererPaginationWithnone(SimpleGetTest):
+    endpoint = '/rest-api/none-paginated/'
 
     def test_paginated_view_does_not_display_next(self):
         self.assertEqual(len(self.collection.links.find(rel='next')), 0)
