@@ -124,7 +124,7 @@ class CollectionJsonRenderer(JSONRenderer):
     def _transform_data(self, request, response, view, data):
         collection = {
             "version": "1.0",
-            "href": request.build_absolute_uri(),
+            "href": self.get_href(request),
         }
 
         if response.exception:
@@ -133,6 +133,9 @@ class CollectionJsonRenderer(JSONRenderer):
             collection.update(self._get_items_and_links(view, data))
 
         return {'collection': collection}
+
+    def get_href(self, request):
+        return request.build_absolute_uri()
 
     def render(self, data, media_type=None, renderer_context=None):
         request = renderer_context['request']

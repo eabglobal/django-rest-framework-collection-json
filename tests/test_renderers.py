@@ -1,4 +1,5 @@
 import json
+from urlparse import urljoin
 
 from django.conf.urls import patterns, include
 from django.db.models import Model, CharField, ForeignKey
@@ -236,6 +237,27 @@ class TestErrorHandling(SimpleGetTest):
     def test_errors_are_reported(self):
         self.assertEqual(self.collection.error.message, 'lol nice one')
 
+
+class UrlRewriteRenderer(CollectionJsonRenderer):
+    def get_href(self, request):
+        return urljoin('http://rewritten.com', request.path)
+
+
+class UrlRewriteView(APIView):
+    renderer_classes = (UrlRewriteRenderer, )
+
+    def get(self, request):
+        return Response({'foo': 'bar'})
+
+
+class TestUrlRewrite(SimpleGetTest):
+    endpoint = '/rest-api/url-rewrite/'
+
+    def test_the_href_url_can_be_rewritten(self):
+        rewritten_url = "http://rewritten.com/rest-api/url-rewrite/"
+        self.assertEqual(self.collection.href, rewritten_url)
+
+
 router = DefaultRouter()
 router.register('dummy', DummyReadOnlyModelViewSet)
 router.register('moron', MoronReadOnlyModelViewSet)
@@ -247,4 +269,5 @@ urlpatterns = patterns(
     (r'^rest-api/paginated/', PaginatedDataView.as_view()),
     (r'^rest-api/none-paginated/', NonePaginatedDataView.as_view()),
     (r'^rest-api/parse-error/', ParseErrorView.as_view()),
+    (r'^rest-api/url-rewrite/', UrlRewriteView.as_view()),
 )
