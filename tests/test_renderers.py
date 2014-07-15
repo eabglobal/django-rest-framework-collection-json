@@ -1,4 +1,3 @@
-import json
 from urlparse import urljoin
 
 from django.conf.urls import patterns, include
@@ -78,18 +77,21 @@ class SimpleGetTest(TestCase):
     endpoint = ''
 
     def setUp(self):
-        response = self.client.get(self.endpoint)
-        self.collection = Collection.from_json(response.content)
+        self.response = self.client.get(self.endpoint)
+        self.collection = Collection.from_json(self.response.content)
 
 
-class TestCollectionJsonRenderer(TestCase):
-    urls = 'tests.test_renderers'
+def create_models():
+    bob = Moron.objects.create(name='Bob LawLaw')
+    Dummy.objects.create(name='Yolo McSwaggerson', moron=bob)
+
+
+class TestCollectionJsonRenderer(SimpleGetTest):
+    endpoint = '/rest-api/dummy/'
 
     def setUp(self):
-        bob = Moron.objects.create(name='Bob LawLaw')
-        Dummy.objects.create(name='Yolo McSwaggerson', moron=bob)
-        self.response = self.client.get('/rest-api/dummy/')
-        self.content = json.loads(self.response.content)
+        create_models()
+        super(TestCollectionJsonRenderer, self).setUp()
 
     def test_it_has_the_right_response_code(self):
         self.assertEqual(self.response.status_code, status.HTTP_200_OK)
@@ -99,28 +101,21 @@ class TestCollectionJsonRenderer(TestCase):
         self.assertEqual(content_type, 'application/vnd.collection+json')
 
     def test_it_has_the_version_number(self):
-        self.assertEqual(self.content['collection']['version'], '1.0')
+        self.assertEqual(self.collection.version, '1.0')
 
     def test_it_has_an_href(self):
-        href = self.content['collection']['href']
+        href = self.collection.href
         self.assertEqual(href, 'http://testserver/rest-api/dummy/')
 
     def get_dummy(self):
-        return self.content['collection']['items'][0]
+        return self.collection.items[0]
 
     def test_the_dummy_item_has_an_href(self):
-        href = self.get_dummy()['href']
+        href = self.get_dummy().href
         self.assertEqual(href, 'http://testserver/rest-api/dummy/1/')
 
-    def get_attribute(self, data, attribute_name):
-        return next(x for x in data if x['name'] == attribute_name)
-
-    def get_dummy_attribute(self, attribute_name):
-        data = self.get_dummy()['data']
-        return self.get_attribute(data, attribute_name)
-
     def test_the_dummy_item_contains_name(self):
-        name = self.get_dummy_attribute('name')['value']
+        name = self.get_dummy().data.find('name')[0].value
         self.assertEqual(name, 'Yolo McSwaggerson')
 
     def get_dummy_link(self, rel):
@@ -128,23 +123,28 @@ class TestCollectionJsonRenderer(TestCase):
         return next(x for x in links if x['rel'] == rel)
 
     def test_the_dummy_item_links_to_child_elements(self):
-        href = self.get_dummy_link('moron')['href']
+        href = self.get_dummy().links.find(rel='moron')[0].href
         self.assertEqual(href, 'http://testserver/rest-api/moron/1/')
 
     def test_link_fields_are_rendered_as_links(self):
-        href = self.get_dummy_link('other_stuff')['href']
+        href = self.get_dummy().links.find(rel='other_stuff')[0].href
         self.assertEqual(href, 'http://other-stuff.com/')
 
     def test_attribute_links_are_rendered_as_links(self):
-        href = self.get_dummy_link('some_link')['href']
+        href = self.get_dummy().links.find(rel='some_link')[0].href
         self.assertEqual(href, 'http://testserver/rest-api/moron/1/')
 
+
+class TestNoSerializerViews(SimpleGetTest):
+    endpoint = '/rest-api/no-serializer/'
+
+    def setUp(self):
+        create_models()
+        super(TestNoSerializerViews, self).setUp()
+
     def test_views_without_a_serializer_work(self):
-        response = self.client.get('/rest-api/no-serializer/')
-        content = json.loads(response.content)
-        data = content['collection']['items'][0]['data']
-        item = self.get_attribute(data, 'foo')
-        self.assertEqual(item['value'], '1')
+        value = self.collection.items[0].data.find('foo')[0].value
+        self.assertEqual(value, '1')
 
 
 class Simple(Model):
