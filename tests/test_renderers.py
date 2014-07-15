@@ -1,7 +1,7 @@
 from urlparse import urljoin
 
 from django.conf.urls import patterns, include
-from django.db.models import Model, CharField, ForeignKey
+from django.db.models import Model, CharField, ForeignKey, ManyToManyField
 from django.test import TestCase
 
 from collection_json import Collection
@@ -36,10 +36,26 @@ class MoronReadOnlyModelViewSet(ReadOnlyModelViewSet):
     queryset = Moron.objects.all()
     serializer_class = MoronHyperlinkedModelSerializer
 
+class Idiot(Model):
+    name = CharField(max_length='100')
+
+
+class IdiotHyperlinkedModelSerializer(HyperlinkedModelSerializer):
+    class Meta(object):
+        model = Idiot
+        fields = ('url', 'name')
+
+
+class IdiotReadOnlyModelViewSet(ReadOnlyModelViewSet):
+    renderer_classes = (CollectionJsonRenderer, )
+    queryset = Idiot.objects.all()
+    serializer_class = IdiotHyperlinkedModelSerializer
+
 
 class Dummy(Model):
     name = CharField(max_length='100')
     moron = ForeignKey('Moron')
+    idiots = ManyToManyField('Idiot')
 
 
 class DummyHyperlinkedModelSerializer(HyperlinkedModelSerializer):
@@ -48,7 +64,7 @@ class DummyHyperlinkedModelSerializer(HyperlinkedModelSerializer):
 
     class Meta(object):
         model = Dummy
-        fields = ('url', 'name', 'moron', 'other_stuff', 'some_link')
+        fields = ('url', 'name', 'moron', 'idiots', 'other_stuff', 'some_link')
 
     def get_other_link(self, obj):
         return 'http://other-stuff.com/'
@@ -83,7 +99,9 @@ class SimpleGetTest(TestCase):
 
 def create_models():
     bob = Moron.objects.create(name='Bob LawLaw')
-    Dummy.objects.create(name='Yolo McSwaggerson', moron=bob)
+    dummy = Dummy.objects.create(name='Yolo McSwaggerson', moron=bob)
+    dummy.idiots.add(Idiot.objects.create(name='frick'))
+    dummy.idiots.add(Idiot.objects.create(name='frack'))
 
 
 class TestCollectionJsonRenderer(SimpleGetTest):
@@ -133,6 +151,11 @@ class TestCollectionJsonRenderer(SimpleGetTest):
     def test_attribute_links_are_rendered_as_links(self):
         href = self.get_dummy().links.find(rel='some_link')[0].href
         self.assertEqual(href, 'http://testserver/rest-api/moron/1/')
+
+    def test_many_to_many_relationships_are_rendered_as_links(self):
+        idiots = self.get_dummy().links.find(rel='idiots')
+        self.assertEqual(idiots[0].href, 'http://testserver/rest-api/idiot/1/')
+        self.assertEqual(idiots[1].href, 'http://testserver/rest-api/idiot/2/')
 
 
 class TestNoSerializerViews(SimpleGetTest):
@@ -261,6 +284,7 @@ class TestUrlRewrite(SimpleGetTest):
 router = DefaultRouter()
 router.register('dummy', DummyReadOnlyModelViewSet)
 router.register('moron', MoronReadOnlyModelViewSet)
+router.register('idiot', IdiotReadOnlyModelViewSet)
 router.register('normal-model', SimpleViewSet)
 urlpatterns = patterns(
     '',

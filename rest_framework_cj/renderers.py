@@ -32,6 +32,14 @@ class CollectionJsonRenderer(JSONRenderer):
         else:
             return None
 
+    def _get_item_field_links(self, field_name, item):
+        data = item[field_name]
+
+        if isinstance(data, list):
+            return [self._make_link(field_name, x) for x in data]
+        else:
+            return [self._make_link(field_name, data)]
+
     def _transform_item(self, serializer, item):
         fields = serializer.fields.items()
         id_field = self._get_id_field(serializer)
@@ -45,7 +53,10 @@ class CollectionJsonRenderer(JSONRenderer):
         if id_field:
             result['href'] = item[id_field]
 
-        links = [self._make_link(x, item[x]) for x in related_fields]
+        links = []
+        for x in related_fields:
+            links.extend(self._get_item_field_links(x, item))
+
         if links:
             result['links'] = links
 
