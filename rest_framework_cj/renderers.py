@@ -35,7 +35,9 @@ class CollectionJsonRenderer(JSONRenderer):
     def _get_item_field_links(self, field_name, item):
         data = item[field_name]
 
-        if isinstance(data, list):
+        if data is None:
+            return []
+        elif isinstance(data, list):
             return [self._make_link(field_name, x) for x in data]
         else:
             return [self._make_link(field_name, data)]

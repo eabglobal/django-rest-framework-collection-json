@@ -36,6 +36,7 @@ class MoronReadOnlyModelViewSet(ReadOnlyModelViewSet):
     queryset = Moron.objects.all()
     serializer_class = MoronHyperlinkedModelSerializer
 
+
 class Idiot(Model):
     name = CharField(max_length='100')
 
@@ -60,14 +61,18 @@ class Dummy(Model):
 
 class DummyHyperlinkedModelSerializer(HyperlinkedModelSerializer):
     other_stuff = LinkField('get_other_link')
+    empty_link = LinkField('get_empty_link')
     some_link = HyperlinkedIdentityField(view_name='moron-detail')
 
     class Meta(object):
         model = Dummy
-        fields = ('url', 'name', 'moron', 'idiots', 'other_stuff', 'some_link')
+        fields = ('url', 'name', 'moron', 'idiots', 'other_stuff', 'some_link', 'empty_link')
 
     def get_other_link(self, obj):
         return 'http://other-stuff.com/'
+
+    def get_empty_link(self, obj):
+        return None
 
 
 class DummyReadOnlyModelViewSet(ReadOnlyModelViewSet):
@@ -147,6 +152,10 @@ class TestCollectionJsonRenderer(SimpleGetTest):
     def test_link_fields_are_rendered_as_links(self):
         href = self.get_dummy().links.find(rel='other_stuff')[0].href
         self.assertEqual(href, 'http://other-stuff.com/')
+
+    def test_empty_link_fields_are_not_rendered_as_links(self):
+        links = self.get_dummy().links.find(rel='empty_link')
+        self.assertEqual(len(links), 0)
 
     def test_attribute_links_are_rendered_as_links(self):
         href = self.get_dummy().links.find(rel='some_link')[0].href
