@@ -155,7 +155,8 @@ class CollectionJsonRenderer(JSONRenderer):
         view = renderer_context['view']
         response = renderer_context['response']
 
-        data = self._transform_data(request, response, view, data)
+        if data:
+            data = self._transform_data(request, response, view, data)
 
         return super(CollectionJsonRenderer, self).render(data, media_type,
                                                           renderer_context)

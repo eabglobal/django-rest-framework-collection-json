@@ -13,6 +13,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework.serializers import (
     HyperlinkedModelSerializer, ModelSerializer
 )
+from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from pytest import fixture
@@ -290,6 +291,22 @@ class TestUrlRewrite(SimpleGetTest):
         self.assertEqual(self.collection.href, rewritten_url)
 
 
+class EmptyView(APIView):
+    renderer_classes = (CollectionJsonRenderer, )
+
+    def get(self, request):
+        return Response(status=HTTP_204_NO_CONTENT)
+
+
+class TestEmpty(TestCase):
+    urls = 'tests.test_renderers'
+
+    def test_empty_content_works(self):
+        response = self.client.get('/rest-api/empty/')
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertEqual(response.content, '')
+
+
 router = DefaultRouter()
 router.register('dummy', DummyReadOnlyModelViewSet)
 router.register('moron', MoronReadOnlyModelViewSet)
@@ -303,4 +320,5 @@ urlpatterns = patterns(
     (r'^rest-api/none-paginated/', NonePaginatedDataView.as_view()),
     (r'^rest-api/parse-error/', ParseErrorView.as_view()),
     (r'^rest-api/url-rewrite/', UrlRewriteView.as_view()),
+    (r'^rest-api/empty/', EmptyView.as_view()),
 )
