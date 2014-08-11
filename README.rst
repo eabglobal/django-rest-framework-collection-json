@@ -14,14 +14,14 @@ To test the package run the following command::
 Usage
 =====
 
-To enable the Collection+JSON renderer, either add it as a default renderer in your django settings file:: python
+To enable the Collection+JSON renderer, either add it as a default renderer in your django settings file::
 
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework_cj.renderers.CollectionJsonRenderer',
     )
 
 
-or explicitly set the renderer on your view:: python
+or explicitly set the renderer on your view::
 
     class MyViewSet(ReadOnlyModelViewSet):
         renderer_classes = (CollectionJsonRenderer, )
