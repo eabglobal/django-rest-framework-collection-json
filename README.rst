@@ -2,25 +2,26 @@
 Django Rest Framework - Collection+JSON
 =======================================
 
-This library adds support for the Collection+JSON hypermedia format to Django Rest Framework. For more information on Collection+JSON see the [official documentation](http://amundsen.com/media-types/collection/).
+This library adds support for the Collection+JSON hypermedia format to Django Rest Framework. For more information on Collection+JSON see the `official Collection+JSON documentation <http://amundsen.com/media-types/collection/>`_.
 
 Unit Testing
 ============
 
 To test the package run the following command::
+
     python setup.py test
 
 Usage
 =====
 
-To enable the Collection+JSON renderer, either add it as a default renderer in your django settings file::
+To enable the Collection+JSON renderer, either add it as a default renderer in your django settings file:: python
 
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework_cj.renderers.CollectionJsonRenderer',
     )
 
 
-or explicitly set the renderer on your view::
+or explicitly set the renderer on your view:: python
 
     class MyViewSet(ReadOnlyModelViewSet):
         renderer_classes = (CollectionJsonRenderer, )
