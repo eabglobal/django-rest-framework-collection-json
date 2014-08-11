@@ -1,30 +1,36 @@
-## Django Rest Framework - Collection+JSON
+=======================================
+Django Rest Framework - Collection+JSON
+=======================================
 
 This library adds support for the Collection+JSON hypermedia format to Django Rest Framework. For more information on Collection+JSON see the [official documentation](http://amundsen.com/media-types/collection/).
 
-### Unit Testing
-To test the package run the following command:
-	python setup.py test
+Unit Testing
+============
 
-### Usage
+To test the package run the following command::
+    python setup.py test
 
-To enable the Collection+JSON renderer, either add it as a default renderer in your django settings file:
+Usage
+=====
+
+To enable the Collection+JSON renderer, either add it as a default renderer in your django settings file::
 
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework_cj.renderers.CollectionJsonRenderer',
     )
 
 
-or explicitly set the renderer on your view:
+or explicitly set the renderer on your view::
 
     class MyViewSet(ReadOnlyModelViewSet):
         renderer_classes = (CollectionJsonRenderer, )
 
-### Renderer Behavior
+Renderer Behavior
+=================
 
 The Collection+JSON renderer will do it's best to support the built in Django Rest Framework Serializers and Views. However, the renderer is designed to work with Django Rest Framework's hyperlinked views/serializers.
 
-Given a simple model and an associated view/serializer:
+Given a simple model and an associated view/serializer::
 
     class Dummy(Model):
         name = CharField(max_length='100')
@@ -39,7 +45,7 @@ Given a simple model and an associated view/serializer:
         queryset = Dummy.objects.all()
         serializer_class = DummyHyperlinkedModelSerializer
 
-If you register the view as follows:
+If you register the view as follows::
 
     router = DefaultRouter()
     router.register('dummy', DummyReadOnlyModelViewSet)
@@ -48,7 +54,7 @@ If you register the view as follows:
         (r'^rest-api/', include(router.urls)),
     )
 
-Navigating to the url /rest-api/dummy/ will generate a collection+JSON containing serialized dummy objects in it's items array.
+Navigating to the url /rest-api/dummy/ will generate a collection+JSON containing serialized dummy objects in it's items array.::
 
     "items": [
         {
@@ -71,7 +77,7 @@ Navigating to the url /rest-api/dummy/ will generate a collection+JSON containin
         }
     ]
 
-Foreign key/Many to Many relationships will be rendered in an item's links array:
+Foreign key/Many to Many relationships will be rendered in an item's links array::
 
     children = ManyToManyField('Child')
 
@@ -86,7 +92,7 @@ Foreign key/Many to Many relationships will be rendered in an item's links array
         },
     ]
 
-The renderer will also recognize the default router and provide links its resources:
+The renderer will also recognize the default router and provide links its resources::
 
     {
         "collection": {
@@ -102,9 +108,10 @@ The renderer will also recognize the default router and provide links its resour
         }
     }
 
-### Link Fields
+Link Fields
+===========
 
-Django Rest Framework Colleciton+JSON also includes a new LinkField class for linking to arbitrary resources.
+Django Rest Framework Colleciton+JSON also includes a new LinkField class for linking to arbitrary resources.::
 
     class DummyHyperlinkedModelSerializer(HyperlinkedModelSerializer):
         related_link = LinkField('get_related_link')
