@@ -1,7 +1,11 @@
 from urlparse import urljoin
 
-from django.conf.urls import patterns, include
-from django.db.models import Model, CharField, ForeignKey, ManyToManyField
+import django
+if django.VERSION[0] == 1 and django.VERSION[1] == 3:
+    from django.conf.urls.defaults import patterns, include
+else:
+    from django.conf.urls import patterns, include
+
 from django.test import TestCase
 
 from collection_json import Collection
@@ -21,9 +25,7 @@ from pytest import fixture
 from rest_framework_cj.renderers import CollectionJsonRenderer
 from rest_framework_cj.fields import LinkField
 
-
-class Moron(Model):
-    name = CharField(max_length='100')
+from testapp.models import Dummy, Idiot, Moron, Simple
 
 
 class MoronHyperlinkedModelSerializer(HyperlinkedModelSerializer):
@@ -38,10 +40,6 @@ class MoronReadOnlyModelViewSet(ReadOnlyModelViewSet):
     serializer_class = MoronHyperlinkedModelSerializer
 
 
-class Idiot(Model):
-    name = CharField(max_length='100')
-
-
 class IdiotHyperlinkedModelSerializer(HyperlinkedModelSerializer):
     class Meta(object):
         model = Idiot
@@ -52,12 +50,6 @@ class IdiotReadOnlyModelViewSet(ReadOnlyModelViewSet):
     renderer_classes = (CollectionJsonRenderer, )
     queryset = Idiot.objects.all()
     serializer_class = IdiotHyperlinkedModelSerializer
-
-
-class Dummy(Model):
-    name = CharField(max_length='100')
-    moron = ForeignKey('Moron')
-    idiots = ManyToManyField('Idiot')
 
 
 class DummyHyperlinkedModelSerializer(HyperlinkedModelSerializer):
@@ -95,7 +87,7 @@ def cj_renderer(request):
 
 
 class SimpleGetTest(TestCase):
-    urls = 'tests.test_renderers'
+    urls = 'testapp.tests.test_renderers'
     endpoint = ''
 
     def setUp(self):
@@ -178,10 +170,6 @@ class TestNoSerializerViews(SimpleGetTest):
     def test_views_without_a_serializer_work(self):
         value = self.collection.items[0].data.find('foo')[0].value
         self.assertEqual(value, '1')
-
-
-class Simple(Model):
-    name = CharField(max_length='100')
 
 
 class SimpleModelSerializer(ModelSerializer):
@@ -299,7 +287,7 @@ class EmptyView(APIView):
 
 
 class TestEmpty(TestCase):
-    urls = 'tests.test_renderers'
+    urls = 'testapp.tests.test_renderers'
 
     def test_empty_content_works(self):
         response = self.client.get('/rest-api/empty/')

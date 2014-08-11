@@ -5,3 +5,4 @@ ipdb
 ipython
 pytest
 pytest-xdist
+tox

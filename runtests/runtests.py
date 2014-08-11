@@ -8,19 +8,23 @@ import os
 import sys
 
 # fix sys path so we don't need to setup PYTHONPATH
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.settings'
+#sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+os.environ['DJANGO_SETTINGS_MODULE'] = 'testapp.tests.settings'
 
 
 def main():
-    """Run the tests for rest_framework and generate a coverage report."""
+    import django
+    if django.VERSION[0] >= 1 and django.VERSION[1] >= 7:
+        django.setup()
 
     from django.conf import settings
     from django.test.utils import get_runner
+
     TestRunner = get_runner(settings)
 
     test_runner = TestRunner()
-    failures = test_runner.run_tests(['tests'])
+    failures = test_runner.run_tests(['testapp'])
+
     sys.exit(failures)
 
 if __name__ == '__main__':
