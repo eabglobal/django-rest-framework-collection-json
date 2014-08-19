@@ -292,7 +292,7 @@ class TestEmpty(TestCase):
     def test_empty_content_works(self):
         response = self.client.get('/rest-api/empty/')
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        self.assertEqual(response.content, '')
+        self.assertEqual(response.content.decode('utf8'), '')
 
 
 router = DefaultRouter()
