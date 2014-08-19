@@ -1,0 +1,24 @@
+language: python
+python: "2.7"
+env:
+  - TOXENV=py3.4-django1.7
+  - TOXENV=py3.3-django1.7
+  - TOXENV=py3.2-django1.7
+  - TOXENV=py2.7-django1.7
+  - TOXENV=py3.4-django1.6
+  - TOXENV=py3.3-django1.6
+  - TOXENV=py3.2-django1.6
+  - TOXENV=py2.7-django1.6
+  - TOXENV=py2.6-django1.6
+  - TOXENV=py3.4-django1.5
+  - TOXENV=py3.3-django1.5
+  - TOXENV=py3.2-django1.5
+  - TOXENV=py2.7-django1.5
+  - TOXENV=py2.6-django1.5
+  - TOXENV=py2.7-django1.4
+  - TOXENV=py2.6-django1.4
+  - TOXENV=py2.7-django1.3
+  - TOXENV=py2.6-django1.3
+install:
+  - pip install -r requirements.txt
+script: tox
