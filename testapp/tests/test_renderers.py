@@ -92,7 +92,7 @@ class SimpleGetTest(TestCase):
 
     def setUp(self):
         self.response = self.client.get(self.endpoint)
-        self.collection = Collection.from_json(self.response.content)
+        self.collection = Collection.from_json(self.response.content.decode('utf8'))
 
 
 def create_models():
