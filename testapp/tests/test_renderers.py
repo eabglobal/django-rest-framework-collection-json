@@ -20,7 +20,6 @@ from rest_framework.serializers import (
 from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
-from pytest import fixture
 
 from rest_framework_cj.renderers import CollectionJsonRenderer
 from rest_framework_cj.fields import LinkField
@@ -79,11 +78,6 @@ class NoSerializerView(APIView):
 
     def get(self, request):
         return Response({'foo': '1'})
-
-
-@fixture
-def cj_renderer(request):
-    return CollectionJsonRenderer()
 
 
 class SimpleGetTest(TestCase):
