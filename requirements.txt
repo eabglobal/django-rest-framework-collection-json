@@ -6,3 +6,4 @@ ipython
 pytest
 pytest-xdist
 tox
+six
