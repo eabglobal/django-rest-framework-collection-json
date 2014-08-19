@@ -4,12 +4,13 @@ Django Rest Framework - Collection+JSON
 
 This library adds support for the Collection+JSON hypermedia format to Django Rest Framework. For more information on Collection+JSON see the `official Collection+JSON documentation <http://amundsen.com/media-types/collection/>`_.
 
-Unit Testing
+Installation
 ============
 
-To test the package run the following command::
+Install django-rest-framework-collection-json with pip::
 
-    python setup.py test
+    pip install django-rest-framework-collection-json
+
 
 Usage
 =====
@@ -141,3 +142,14 @@ Django Rest Framework Colleciton+JSON also includes a new LinkField class for li
             ]
         },
     ]
+
+Unit Testing
+============
+
+You can run the unit tests against your current environment by running::
+
+    $ python setup.py test
+
+You can also use tox::
+
+    $ tox
