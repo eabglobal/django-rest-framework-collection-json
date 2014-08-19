@@ -1,2 +1,6 @@
 *.pyc
 .tox
+build
+dist
+djangorestframework*.egg
+djangorestframework*.egg-info
