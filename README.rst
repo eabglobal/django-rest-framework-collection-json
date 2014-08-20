@@ -2,6 +2,9 @@
 Django Rest Framework - Collection+JSON
 =======================================
 
+.. image:: https://travis-ci.org/advisory/django-rest-framework-collection-json.svg?branch=master
+    :target: https://travis-ci.org/advisory/django-rest-framework-collection-json
+
 This library adds support for the Collection+JSON hypermedia format to Django Rest Framework. For more information on Collection+JSON see the `official Collection+JSON documentation <http://amundsen.com/media-types/collection/>`_.
 
 Installation
@@ -153,3 +156,5 @@ You can run the unit tests against your current environment by running::
 You can also use tox::
 
     $ tox
+
+The build environments in the tox configuration are designed to match the builds supported by Django Rest Framework.
